@@ -652,8 +652,6 @@ export function Layout() {
         >
           Skip to Main Content
         </a>
-        <WorktreeBanner />
-        <DevRestartBanner devServer={health?.devServer} />
         <div
           className={cn(
             "min-h-0 flex-1",

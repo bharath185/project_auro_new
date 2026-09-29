@@ -95,7 +95,11 @@ function firstNonEmptyString(...values: unknown[]): string | undefined {
 export function buildGeminiAcpConfig(config: Record<string, unknown>): Record<string, unknown> {
   const configuredAgentCommand = firstNonEmptyString(config.agentCommand, config.acpAgentCommand);
   const configuredGeminiCommand = firstNonEmptyString(config.command);
-  const agentCommand = configuredAgentCommand ?? (configuredGeminiCommand ? `${configuredGeminiCommand} --acp` : undefined);
+  const rawModel = asString(config.model, "").trim();
+  const modelArg = rawModel && rawModel !== DEFAULT_GEMINI_LOCAL_MODEL ? ` -m ${rawModel}` : "";
+  const agentCommand =
+    configuredAgentCommand ??
+    (configuredGeminiCommand ? `${configuredGeminiCommand} --acp${modelArg}` : modelArg ? `gemini --acp${modelArg}` : undefined);
   const stateDir = firstNonEmptyString(config.stateDir, config.acpStateDir);
   const mode = firstNonEmptyString(config.mode, config.acpMode) ?? DEFAULT_ACP_ENGINE_MODE;
   const permissionMode =

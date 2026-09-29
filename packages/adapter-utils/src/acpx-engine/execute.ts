@@ -2094,6 +2094,14 @@ async function buildRuntime(input: {
   });
   let agentCommand = configuredCommand || builtInCommand?.command || null;
   let agentCommandShell = configuredCommand || builtInCommand?.shellCommand || "";
+  if (acpxAgent === "gemini" && requestedModel && requestedModel !== "auto") {
+    if (agentCommand && !agentCommand.includes("--model") && !agentCommand.includes(" -m ")) {
+      agentCommand = `${agentCommand} -m ${requestedModel}`;
+    }
+    if (agentCommandShell && !agentCommandShell.includes("--model") && !agentCommandShell.includes(" -m ")) {
+      agentCommandShell = `${agentCommandShell} -m ${requestedModel}`;
+    }
+  }
   // A runner-backed remote sandbox is the only lane that crosses the staging
   // and serialized-launch-env seam. Runner-less ACP→CLI fallback, SSH, and
   // local runs keep their historical host-provider compatibility behavior.
@@ -2558,10 +2566,13 @@ function sessionConfigOptions(prepared: AcpxPreparedRuntime): Array<{ key: strin
   // Claude and Codex runtime config is pre-set via startup env vars; skip
   // set_config_option to avoid ACP-server picker validation rejecting valid
   // backend model IDs that are not advertised by the local ACP server.
+  // Gemini CLI sets model via CLI flag at startup and does not implement
+  // session/set_config_option (ACP -32601).
   if (
     prepared.requestedModel &&
     prepared.acpxAgent !== "claude" &&
-    prepared.acpxAgent !== "codex"
+    prepared.acpxAgent !== "codex" &&
+    prepared.acpxAgent !== "gemini"
   ) {
     options.push({ key: "model", value: prepared.requestedModel });
   }
@@ -2595,15 +2606,22 @@ async function applySessionConfigOptions(input: {
     throw new Error(message);
   }
   for (const option of options) {
-    await input.runtime.setConfigOption({
-      handle: input.handle,
-      key: option.key,
-      value: option.value,
-    });
-    await input.onLog(
-      "stdout",
-      `[paperclip] Applied ACPX ${input.prepared.acpxAgent} config ${option.key}=${option.value}\n`,
-    );
+    try {
+      await input.runtime.setConfigOption({
+        handle: input.handle,
+        key: option.key,
+        value: option.value,
+      });
+      await input.onLog(
+        "stdout",
+        `[paperclip] Applied ACPX ${input.prepared.acpxAgent} config ${option.key}=${option.value}\n`,
+      );
+    } catch (err) {
+      await input.onLog(
+        "stderr",
+        `[paperclip] Warning: ACP agent rejected config ${option.key}=${option.value} (${(err as Error)?.message || err}); continuing.\n`,
+      );
+    }
   }
 }
 
@@ -4719,7 +4737,9 @@ export function createAcpxEngineExecutor(deps: AcpxEngineExecutorOptions = {}) {
                       ? `Requested ACPX model: ${prepared.requestedModel} (set via ANTHROPIC_MODEL env at startup).`
                       : prepared.acpxAgent === "codex"
                         ? `Requested ACPX model: ${prepared.requestedModel} (set via CODEX_CONFIG at startup).`
-                      : `Requested ACPX model: ${prepared.requestedModel}.`,
+                      : prepared.acpxAgent === "gemini"
+                        ? `Requested ACPX model: ${prepared.requestedModel} (set via -m flag at startup).`
+                        : `Requested ACPX model: ${prepared.requestedModel}.`,
                   ]
                 : []),
               ...(prepared.requestedThinkingEffort ? [`Requested ACPX thinking effort: ${prepared.requestedThinkingEffort}.`] : []),

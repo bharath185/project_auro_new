@@ -297,7 +297,7 @@ export function Dashboard() {
       return (
         <EmptyState
           icon={LayoutDashboard}
-          message="Welcome to Paperclip. Set up your first organization and agent to get started."
+          message="Welcome to Project Auro. Set up your first organization and agent to get started."
           action="Get Started"
           onAction={openOnboarding}
         />
@@ -401,11 +401,11 @@ export function Dashboard() {
             <MetricCard
               icon={Bot}
               value={data.agents.active + data.agents.running + data.agents.paused + data.agents.error}
-              label="Agents Enabled"
+              label="Team Online"
               to="/agents"
               description={
                 <span>
-                  {data.agents.running} running{", "}
+                  {data.agents.running} active{", "}
                   {data.agents.paused} paused{", "}
                   {data.agents.error} errors
                 </span>
@@ -414,7 +414,7 @@ export function Dashboard() {
             <MetricCard
               icon={CircleDot}
               value={data.tasks.inProgress}
-              label="Tasks In Progress"
+              label="Active Stories"
               to="/issues"
               description={
                 <span>
@@ -426,7 +426,7 @@ export function Dashboard() {
             <MetricCard
               icon={DollarSign}
               value={formatCents(data.costs.monthSpendCents)}
-              label="Month Spend"
+              label="Sprint Spend"
               to="/costs"
               description={
                 <span>
@@ -439,13 +439,13 @@ export function Dashboard() {
             <MetricCard
               icon={ShieldCheck}
               value={data.pendingApprovals + data.budgets.pendingApprovals}
-              label="Pending Approvals"
+              label="CEO Sign-off"
               to="/approvals"
               description={
                 <span>
                   {data.budgets.pendingApprovals > 0
-                    ? `${data.budgets.pendingApprovals} budget overrides awaiting board review`
-                    : "Awaiting board review"}
+                    ? `${data.budgets.pendingApprovals} items awaiting board review`
+                    : "Nothing pending"}
                 </span>
               }
             />
@@ -502,14 +502,14 @@ export function Dashboard() {
               </div>
             )}
 
-            {/* Recent Tasks */}
+            {/* Recent Stories */}
             <div className="min-w-0">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                Recent Tasks
+                Recent Stories
               </h3>
               {recentIssues.length === 0 ? (
                 <Card className="block p-4">
-                  <p className="text-sm text-muted-foreground">No tasks yet.</p>
+                  <p className="text-sm text-muted-foreground">No stories yet — give the CEO a project to kick off.</p>
                 </Card>
               ) : (
                 <Card className="@container block py-0 divide-y divide-border overflow-hidden">

@@ -124,7 +124,7 @@ export function SidebarServerInfo() {
   return (
     <div className="mt-2 border-t border-border pt-2">
       <p className="px-3 pb-1 pt-1 text-(length:--text-micro) font-medium uppercase tracking-wide text-muted-foreground">
-        Server
+        Project Auro Local Core
       </p>
       <ServerInfoRow
         icon={Clock3}

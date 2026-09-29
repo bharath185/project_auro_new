@@ -1,6 +1,6 @@
 import { createProviderStoppedBoundary } from "@paperclipai/adapter-utils/provider-stopped-boundary";
 import fs from "node:fs/promises";
-import type { Dirent } from "node:fs";
+import { existsSync, type Dirent } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -95,6 +95,7 @@ function buildGeminiHeadlessEnv(env: Record<string, string>): Record<string, str
     next.COLORTERM = "truecolor";
   }
   next.NO_BROWSER = "1";
+  next.GEMINI_CLI_TRUST_WORKSPACE = "true";
   delete next.NO_COLOR;
   return next;
 }
@@ -616,6 +617,16 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       basePrompt,
     ]);
     const args = buildArgs(resumeSessionId, prompt);
+    let execCommand = command;
+    let execArgs = args;
+    if (process.platform === "win32" && (command === "gemini" || command.toLowerCase().endsWith("gemini.cmd") || command.toLowerCase().endsWith("gemini"))) {
+      const geminiJs = path.join(process.env.APPDATA || "", "npm", "node_modules", "@google", "gemini-cli", "bundle", "gemini.js");
+      if (existsSync(geminiJs)) {
+        execCommand = process.execPath;
+        execArgs = [geminiJs, ...args];
+      }
+    }
+
     const invocationEnv = buildGeminiHeadlessEnv(env);
     const invocationRuntimeEnv = buildGeminiRuntimeEnv(env);
     const loggedEnv = buildInvocationEnvForLogs(invocationEnv, {
@@ -639,7 +650,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       });
     }
 
-    const proc = await runAdapterExecutionTargetProcess(runId, runtimeExecutionTarget, command, args, {
+    const proc = await runAdapterExecutionTargetProcess(runId, runtimeExecutionTarget, execCommand, execArgs, {
       onProcessStopped: providerStop.beginInvocation(),
       cwd,
       env: invocationEnv,
